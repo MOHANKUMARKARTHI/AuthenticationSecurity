@@ -27,7 +27,7 @@ public class DemoController {
             @ApiResponse(responseCode = "403", content = { @Content(schema = @Schema()) }),
             @ApiResponse(responseCode = "404", content = { @Content(schema = @Schema()) }),
             @ApiResponse(responseCode = "500", content = { @Content(schema = @Schema()) }) })
-    @GetMapping
+    @GetMapping("/demo")
     public ResponseEntity<String> sayHello() {
         return new ResponseEntity(new StandardResponse("200", "Done", "Hello from secured endpoint"), HttpStatus.OK);
     }
