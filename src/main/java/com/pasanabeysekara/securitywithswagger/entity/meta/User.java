@@ -1,5 +1,6 @@
 package com.pasanabeysekara.securitywithswagger.entity.meta;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pasanabeysekara.securitywithswagger.enums.Gender;
 import com.pasanabeysekara.securitywithswagger.enums.Role;
 import jakarta.persistence.*;
@@ -49,6 +50,7 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
 

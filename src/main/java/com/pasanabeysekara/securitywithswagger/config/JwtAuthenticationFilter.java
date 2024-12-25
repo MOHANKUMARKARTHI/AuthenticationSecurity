@@ -17,6 +17,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * JwtAuthenticationFilter is a custom filter that extends OncePerRequestFilter.
+ * It is responsible for filtering incoming HTTP requests to authenticate users based on JWT tokens.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,12 +29,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final TokenRepository tokenRepository;
 
+    /**
+     * Filters each request to check for a valid JWT token and authenticate the user if the token is valid.
+     *
+     * @param request     the HTTP request
+     * @param response    the HTTP response
+     * @param filterChain the filter chain
+     * @throws ServletException if an error occurs during the filtering process
+     * @throws IOException      if an I/O error occurs during the filtering process
+     */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        // Bypass the filter for authentication and Swagger documentation endpoints
         if (request.getServletPath().contains("/api/v1/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -39,20 +53,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+
+        // Retrieve the Authorization header from the request
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
+
+        // If the Authorization header is missing or does not start with "Bearer ", continue the filter chain
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
+
+        // Extract the JWT token and retrieve the username
         jwt = authHeader.substring(7);
         userEmail = jwtService.extractUsername(jwt);
+
+        // If the username is not null and there is no existing authentication, proceed with authentication
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
             var isTokenValid = tokenRepository.findByToken(jwt)
                     .map(t -> !t.isExpired() && !t.isRevoked())
                     .orElse(false);
+
+            // If the token is valid, create an authentication token and set it in the SecurityContextHolder
             if (jwtService.isTokenValid(jwt, userDetails) && isTokenValid) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
@@ -65,6 +89,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
+        // Continue the filter chain
         filterChain.doFilter(request, response);
     }
 }
